@@ -75,10 +75,9 @@
         <option value="dinner">Večera</option>
     </select>
 
-    
-
     <label for="target">Ciljani šećer (mmol/L):</label>
     <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="6">
+    
     <label for="current">Trenutni šećer (mmol/L):</label>
     <input type="number" id="current" placeholder="Unesite trenutni šećer" step="0.1">
 
@@ -93,6 +92,28 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Funkcija za preuzimanje trenutnog šećera
+        async function fetchCurrentSugar() {
+            try {
+                const response = await fetch('https://marijana.info/api/v1/entries/sgv?count=1');
+                const data = await response.json();
+                
+                // Preuzmi vrednost šećera iz odgovora i konvertuj je u mmol/L
+                const sugarMgDl = data[0].sgv;
+                const sugarMmolL = sugarMgDl / 18.0182; // Konverzija iz mg/dL u mmol/L
+                
+                // Postavi vrednost u polje za trenutni šećer
+                document.getElementById('current').value = sugarMmolL.toFixed(2);
+            } catch (error) {
+                console.error('Greška prilikom preuzimanja podataka:', error);
+            }
+        }
+
+        // Pozovi funkciju za preuzimanje šećera kada se stranica učita
+        fetchCurrentSugar();
+    });
+
     function calculateInsulin() {
         const tdid = parseFloat(document.getElementById('tdid').value);
         const mealType = document.getElementById('mealType').value;
