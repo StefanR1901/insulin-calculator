@@ -6,57 +6,140 @@
     <title>Kalkulator Insulina</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            background-color: #e0f7fa;
             margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
+
         .container {
+            width: 100%;
             max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
+            background: #ffffff;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
         }
+
         h1 {
             text-align: center;
+            color: #00796b;
+            font-size: 28px;
         }
+
+        label {
+            font-size: 16px;
+            color: #004d40;
+            display: block;
+            margin-bottom: 6px;
+            margin-top: 12px;
+        }
+
         input[type="number"], select, button {
             width: 100%;
             padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
+            margin: 8px 0;
+            border: 2px solid #b2dfdb;
+            border-radius: 6px;
             font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
         }
+
+        input[type="number"]:focus, select:focus {
+            border-color: #00796b;
+            outline: none;
+        }
+
+        button {
+            background-color: #00796b;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
         button:hover {
-            background-color: #0056b3;
+            background-color: #004d40;
         }
-        .result {
+
+        .result, .formula, .warning, .direction {
             margin-top: 20px;
-            padding: 10px;
-            background-color: #dff0d8;
-            border: 1px solid #d6e9c6;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 8px;
             font-size: 18px;
         }
+
+        .result {
+            background-color: #e0f2f1;
+            color: #004d40;
+            border: 2px solid #004d40;
+            text-align: center;
+        }
+
         .formula {
-            margin-top: 20px;
-            padding: 10px;
             background-color: #f4f4f4;
+            color: #333;
             border: 1px solid #ddd;
-            border-radius: 5px;
             font-family: monospace;
         }
+
         .warning {
-            color: red;
+            background-color: #ffebee;
+            color: #d32f2f;
+            border: 2px solid #d32f2f;
             font-weight: bold;
-            margin-top: 10px;
+            text-align: center;
+        }
+
+        .direction {
+            font-size: 30px;
+            color: #00796b;
+            text-align: center;
+        }
+
+        /* Responzivnost za manje uređaje */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            input[type="number"], select, button {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .result, .formula, .warning, .direction {
+                font-size: 16px;
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            input[type="number"], select, button {
+                font-size: 14px;
+                padding: 6px;
+            }
+
+            .result, .formula, .warning, .direction {
+                font-size: 14px;
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -77,9 +160,12 @@
 
     <label for="target">Ciljani šećer (mmol/L):</label>
     <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="6">
-    
+
     <label for="current">Trenutni šećer (mmol/L):</label>
     <input type="number" id="current" placeholder="Unesite trenutni šećer" step="0.1">
+
+    <!-- Dodajemo mesto za prikaz strelice -->
+    <div id="direction" class="direction"></div>
 
     <label for="carbs">Grami ugljenih hidrata:</label>
     <input type="number" id="carbs" placeholder="Unesite grame ugljenih hidrata" step="1">
@@ -93,18 +179,45 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Funkcija za preuzimanje trenutnog šećera
+        // Funkcija za preuzimanje najnovijeg šećera
         async function fetchCurrentSugar() {
             try {
-                const response = await fetch('https://marijana.info/api/v1/entries/sgv?count=1');
+                const response = await fetch('https://marijana.info/api/v1/entries.json?svg');
                 const data = await response.json();
                 
-                // Preuzmi vrednost šećera iz odgovora i konvertuj je u mmol/L
-                const sugarMgDl = data[0].sgv;
+                // Pronađi najnoviji unos
+                const latestEntry = data[0];
+                const sugarMgDl = latestEntry.sgv;
+                const direction = latestEntry.direction; // Dobavljamo vrednost direction
                 const sugarMmolL = sugarMgDl / 18.0182; // Konverzija iz mg/dL u mmol/L
                 
-                // Postavi vrednost u polje za trenutni šećer
-                document.getElementById('current').value = sugarMmolL.toFixed(2);
+                // Postavi vrednost u polje za trenutni šećer, zaokruženo na jednu decimalu
+                document.getElementById('current').value = sugarMmolL.toFixed(1);
+                
+                // Prikaz strelice na osnovu direction vrednosti
+                const directionElement = document.getElementById('direction');
+                let directionSymbol;
+                switch (direction) {
+                    case 'Flat':
+                        directionSymbol = '→'; // Strelica desno
+                        break;
+                    case 'SingleUp':
+                        directionSymbol = '↑'; // Strelica naviše
+                        break;
+                    case 'DoubleUp':
+                        directionSymbol = '↑↑'; // Dvostruka strelica naviše
+                        break;
+                    case 'SingleDown':
+                        directionSymbol = '↓'; // Strelica naniže
+                        break;
+                    case 'DoubleDown':
+                        directionSymbol = '↓↓'; // Dvostruka strelica naniže
+                        break;
+                    default:
+                        directionSymbol = ''; // Nema strelice ako nije prepoznato
+                }
+
+                directionElement.textContent = `Smer kretanja šećera: ${directionSymbol}`;
             } catch (error) {
                 console.error('Greška prilikom preuzimanja podataka:', error);
             }
