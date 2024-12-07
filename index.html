@@ -70,7 +70,7 @@
             background-color: #004d40;
         }
 
-        .result, .formula, .warning, .direction {
+        .result, .formula, .warning {
             margin-top: 20px;
             padding: 15px;
             border-radius: 8px;
@@ -98,49 +98,6 @@
             font-weight: bold;
             text-align: center;
         }
-
-        .direction {
-            font-size: 30px;
-            color: #00796b;
-            text-align: center;
-        }
-
-        /* Responzivnost za manje uređaje */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            h1 {
-                font-size: 24px;
-            }
-
-            input[type="number"], select, button {
-                font-size: 14px;
-                padding: 8px;
-            }
-
-            .result, .formula, .warning, .direction {
-                font-size: 16px;
-                padding: 10px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 20px;
-            }
-
-            input[type="number"], select, button {
-                font-size: 14px;
-                padding: 6px;
-            }
-
-            .result, .formula, .warning, .direction {
-                font-size: 14px;
-                padding: 8px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -151,15 +108,11 @@
     <label for="tdid">Ukupan dnevni insulin (TDID):</label>
     <input type="number" id="tdid" placeholder="Unesite ukupan dnevni insulin (jedinice)" step="1" value="54">
 
- 
-
     <label for="target">Ciljani šećer (mmol/L):</label>
-    <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="5">
+    <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="6">
 
     <label for="current">Trenutni šećer (mmol/L):</label>
     <input type="number" id="current" placeholder="Unesite trenutni šećer" step="0.1">
-
-    <div id="direction" class="direction"></div>
 
     <label for="carbs">Grami ugljenih hidrata:</label>
     <input type="number" id="carbs" placeholder="Unesite grame ugljenih hidrata" step="1">
@@ -175,79 +128,40 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        async function fetchCurrentSugar() {
-            try {
-                const response = await fetch('https://marijana.info/api/v1/entries.json?svg');
-                const data = await response.json();
-                
-                const latestEntry = data[0];
-                const sugarMgDl = latestEntry.sgv;
-                const direction = latestEntry.direction;
-                const sugarMmolL = sugarMgDl / 18.0182;
-                
-                document.getElementById('current').value = sugarMmolL.toFixed(1);
-
-                const directionElement = document.getElementById('direction');
-                let directionSymbol;
-                switch (direction) {
-                    case 'Flat':
-                        directionSymbol = '→';
-                        break;
-                    case 'SingleUp':
-                        directionSymbol = '↑';
-                        break;
-                    case 'DoubleUp':
-                        directionSymbol = '↑↑';
-                        break;
-                    case 'SingleDown':
-                        directionSymbol = '↓';
-                        break;
-                    case 'DoubleDown':
-                        directionSymbol = '↓↓';
-                        break;
-                    default:
-                        directionSymbol = '';
-                }
-
-                directionElement.textContent = `Smer kretanja šećera: ${directionSymbol}`;
-            } catch (error) {
-                console.error('Greška prilikom preuzimanja podataka:', error);
-            }
-        }
-
-        fetchCurrentSugar();
-    });
-
     function calculateInsulin() {
         const tdid = parseFloat(document.getElementById('tdid').value);
-        const mealType = document.getElementById('mealType').value;
         const current = parseFloat(document.getElementById('current').value);
         const target = parseFloat(document.getElementById('target').value);
         const carbs = parseFloat(document.getElementById('carbs').value);
         const sensitivity = parseFloat(document.getElementById('sensitivity').value);
 
+        // Provera unetih vrednosti
         if (isNaN(tdid) || isNaN(current) || isNaN(target) || isNaN(carbs) || isNaN(sensitivity)) {
             alert("Molimo vas da unesete sve vrednosti!");
             return;
         }
 
-        const icr = 500 / tdid;
-        const carbInsulin = carbs / icr;
-        const correction = (current - target) 
+        // Novi način izračunavanja prema vašim zahtevima
+        const icr = 500 / tdid; // Insulin-to-Carb Ratio
+        const carbInsulin = carbs / icr; // Insulin za ugljene hidrate
+        const correction = (current - target) / sensitivity; // Korekcija za trenutni šećer
+
+        // Ukupna doza insulina
         const totalInsulin = carbInsulin + correction;
 
+        // Prikaz rezultata
         const resultElement = document.getElementById('result');
         resultElement.style.display = 'block';
         resultElement.textContent = `Ukupna doza insulina: ${totalInsulin.toFixed(2)} jedinica`;
 
+        // Prikaz formule
         const formulaElement = document.getElementById('formula');
         formulaElement.style.display = 'block';
         formulaElement.innerHTML = `
             <b>Formula za izračunavanje:</b><br>
             ICR = 500 / ${tdid} = ${icr.toFixed(2)}<br>
             Insulin za ugljene hidrate: ${carbs} / ${icr.toFixed(2)} = ${carbInsulin.toFixed(2)}<br>
-            Korekcija: (${current} - ${target})  = ${correction.toFixed(2)}<br>
+            Korekcija: (${current} - ${target}) / ${sensitivity} = ${correction.toFixed(2)}<br>
             Ukupno: ${carbInsulin.toFixed(2)} + ${correction.toFixed(2)} = ${totalInsulin.toFixed(2)}
         `;
     }
