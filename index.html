@@ -164,11 +164,13 @@
     <label for="current">Trenutni šećer (mmol/L):</label>
     <input type="number" id="current" placeholder="Unesite trenutni šećer" step="0.1">
 
-    <!-- Dodajemo mesto za prikaz strelice -->
     <div id="direction" class="direction"></div>
 
     <label for="carbs">Grami ugljenih hidrata:</label>
     <input type="number" id="carbs" placeholder="Unesite grame ugljenih hidrata" step="1">
+
+    <label for="sensitivity">Osjetljivost na insulin:</label>
+    <input type="number" id="sensitivity" placeholder="Unesite osjetljivost (npr. 2)" step="0.01">
 
     <button onclick="calculateInsulin()">Izračunaj</button>
 
@@ -179,42 +181,38 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Funkcija za preuzimanje najnovijeg šećera
         async function fetchCurrentSugar() {
             try {
                 const response = await fetch('https://marijana.info/api/v1/entries.json?svg');
                 const data = await response.json();
                 
-                // Pronađi najnoviji unos
                 const latestEntry = data[0];
                 const sugarMgDl = latestEntry.sgv;
-                const direction = latestEntry.direction; // Dobavljamo vrednost direction
-                const sugarMmolL = sugarMgDl / 18.0182; // Konverzija iz mg/dL u mmol/L
+                const direction = latestEntry.direction;
+                const sugarMmolL = sugarMgDl / 18.0182;
                 
-                // Postavi vrednost u polje za trenutni šećer, zaokruženo na jednu decimalu
                 document.getElementById('current').value = sugarMmolL.toFixed(1);
-                
-                // Prikaz strelice na osnovu direction vrednosti
+
                 const directionElement = document.getElementById('direction');
                 let directionSymbol;
                 switch (direction) {
                     case 'Flat':
-                        directionSymbol = '→'; // Strelica desno
+                        directionSymbol = '→';
                         break;
                     case 'SingleUp':
-                        directionSymbol = '↑'; // Strelica naviše
+                        directionSymbol = '↑';
                         break;
                     case 'DoubleUp':
-                        directionSymbol = '↑↑'; // Dvostruka strelica naviše
+                        directionSymbol = '↑↑';
                         break;
                     case 'SingleDown':
-                        directionSymbol = '↓'; // Strelica naniže
+                        directionSymbol = '↓';
                         break;
                     case 'DoubleDown':
-                        directionSymbol = '↓↓'; // Dvostruka strelica naniže
+                        directionSymbol = '↓↓';
                         break;
                     default:
-                        directionSymbol = ''; // Nema strelice ako nije prepoznato
+                        directionSymbol = '';
                 }
 
                 directionElement.textContent = `Smer kretanja šećera: ${directionSymbol}`;
@@ -223,7 +221,6 @@
             }
         }
 
-        // Pozovi funkciju za preuzimanje šećera kada se stranica učita
         fetchCurrentSugar();
     });
 
@@ -233,68 +230,31 @@
         const current = parseFloat(document.getElementById('current').value);
         const target = parseFloat(document.getElementById('target').value);
         const carbs = parseFloat(document.getElementById('carbs').value);
+        const sensitivity = parseFloat(document.getElementById('sensitivity').value);
 
-        // Provera unetih vrednosti
-        if (isNaN(tdid) || isNaN(current) || isNaN(target) || isNaN(carbs)) {
+        if (isNaN(tdid) || isNaN(current) || isNaN(target) || isNaN(carbs) || isNaN(sensitivity)) {
             alert("Molimo vas da unesete sve vrednosti!");
             return;
         }
 
-        // Izračunavanje ICR na osnovu TDID
-        const icr = 500 / tdid; // Insulin-to-Carb Ratio
-
-        // Postavljanje faktora za ugljene hidrate i korekciju za doručak, ručak i večeru
-        let carbSensitivityFactor, cf;
-        if (mealType === "breakfast") {
-            carbSensitivityFactor = 2; // Faktor za ugljene hidrate za doručak
-            cf = 2; // Korekcioni faktor za doručak
-        } else if (mealType === "lunch") {
-            carbSensitivityFactor = 1.85; // Faktor za ugljene hidrate za ručak
-            cf = 100 / tdid; // Korekcioni faktor za ručak na osnovu TDID
-        } else {
-            carbSensitivityFactor = 1; // Faktor za ugljene hidrate za večeru (nema množenja)
-            cf = 1; // Korekcioni faktor za večeru
-        }
-
-        // Izračunavanje insulina za ugljene hidrate sa osjetljivošću
-        const carbInsulin = (carbs / icr) * carbSensitivityFactor;
-
-        // Korekcija na osnovu trenutnog šećera
-        let correction = 0;
-        correction = (current - target) / cf; // Korekcija sa odgovarajućim faktorom
-
-        // Ukupna doza insulina
+        const icr = 500 / tdid;
+        const carbInsulin = carbs / icr;
+        const correction = (current - target) / sensitivity;
         const totalInsulin = carbInsulin + correction;
 
-        // Prikaz rezultata
         const resultElement = document.getElementById('result');
         resultElement.style.display = 'block';
         resultElement.textContent = `Ukupna doza insulina: ${totalInsulin.toFixed(2)} jedinica`;
 
-        // Prikaz formule
         const formulaElement = document.getElementById('formula');
         formulaElement.style.display = 'block';
         formulaElement.innerHTML = `
             <b>Formula za izračunavanje:</b><br>
-            <b>Insulin za ugljene hidrate (ICR):</b><br>
-            ICR = 500 / TDID = 500 / ${tdid} = ${icr.toFixed(2)}<br>
-            CarbInsulin = (Carbs / ICR) * Sensitivity = (${carbs} / ${icr.toFixed(2)}) * ${carbSensitivityFactor} = ${carbInsulin.toFixed(2)} jedinica<br><br>
-
-            <b>Korekcija insulina:</b><br>
-            Correction = (Current - Target) / CF = (${current} - ${target}) / ${cf.toFixed(2)} = ${correction.toFixed(2)} jedinica<br><br>
-
-            <b>Ukupna doza insulina:</b><br>
-            TotalInsulin = CarbInsulin + Correction = ${carbInsulin.toFixed(2)} + ${correction.toFixed(2)} = ${totalInsulin.toFixed(2)} jedinica
+            ICR = 500 / ${tdid} = ${icr.toFixed(2)}<br>
+            Insulin za ugljene hidrate: ${carbs} / ${icr.toFixed(2)} = ${carbInsulin.toFixed(2)}<br>
+            Korekcija: (${current} - ${target}) / ${sensitivity} = ${correction.toFixed(2)}<br>
+            Ukupno: ${carbInsulin.toFixed(2)} + ${correction.toFixed(2)} = ${totalInsulin.toFixed(2)}
         `;
-
-        // Prikaz upozorenja za nisku korekciju
-        const warningElement = document.getElementById('warning');
-        if (current < target) {
-            warningElement.style.display = 'block';
-            warningElement.textContent = `Upozorenje: Vaš trenutni šećer je nizak (${current} mmol/L). Razmislite o unosu dodatnih ugljenih hidrata pre nego što uzmete insulin.`;
-        } else {
-            warningElement.style.display = 'none';
-        }
     }
 </script>
 
