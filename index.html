@@ -143,7 +143,7 @@
 
         // Novi način izračunavanja prema vašim zahtevima
         const icr = 500 / tdid; // Insulin-to-Carb Ratio
-        const carbInsulin = carbs / icr; // Insulin za ugljene hidrate
+        const carbInsulin = (carbs / icr) * sensitivity; // Insulin za ugljene hidrate
         const correction = (current - target); // Korekcija za trenutni šećer
 
         // Ukupna doza insulina
@@ -160,7 +160,7 @@
         formulaElement.innerHTML = `
             <b>Formula za izračunavanje:</b><br>
             ICR = 500 / ${tdid} = ${icr.toFixed(2)}<br>
-            Insulin za ugljene hidrate: ${carbs} / ${icr.toFixed(2)} = ${carbInsulin.toFixed(2)}<br>
+            Insulin za ugljene hidrate: (${carbs} / ${icr.toFixed(2)}) * ${sensitivity}  = ${carbInsulin.toFixed(2)}<br>
             Korekcija: (${current} - ${target}) = ${correction.toFixed(2)}<br>
             Ukupno: ${carbInsulin.toFixed(2)} + ${correction.toFixed(2)} = ${totalInsulin.toFixed(2)}
         `;
