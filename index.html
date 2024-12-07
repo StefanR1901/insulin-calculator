@@ -151,15 +151,10 @@
     <label for="tdid">Ukupan dnevni insulin (TDID):</label>
     <input type="number" id="tdid" placeholder="Unesite ukupan dnevni insulin (jedinice)" step="1" value="54">
 
-    <label for="mealType">Obrok:</label>
-    <select id="mealType">
-        <option value="breakfast">Doručak</option>
-        <option value="lunch">Ručak</option>
-        <option value="dinner">Večera</option>
-    </select>
+ 
 
     <label for="target">Ciljani šećer (mmol/L):</label>
-    <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="6">
+    <input type="number" id="target" placeholder="Unesite ciljani šećer" step="0.1" value="5">
 
     <label for="current">Trenutni šećer (mmol/L):</label>
     <input type="number" id="current" placeholder="Unesite trenutni šećer" step="0.1">
@@ -239,7 +234,7 @@
 
         const icr = 500 / tdid;
         const carbInsulin = carbs / icr;
-        const correction = (current - target) / sensitivity;
+        const correction = (current - target) 
         const totalInsulin = carbInsulin + correction;
 
         const resultElement = document.getElementById('result');
@@ -252,7 +247,7 @@
             <b>Formula za izračunavanje:</b><br>
             ICR = 500 / ${tdid} = ${icr.toFixed(2)}<br>
             Insulin za ugljene hidrate: ${carbs} / ${icr.toFixed(2)} = ${carbInsulin.toFixed(2)}<br>
-            Korekcija: (${current} - ${target}) / ${sensitivity} = ${correction.toFixed(2)}<br>
+            Korekcija: (${current} - ${target})  = ${correction.toFixed(2)}<br>
             Ukupno: ${carbInsulin.toFixed(2)} + ${correction.toFixed(2)} = ${totalInsulin.toFixed(2)}
         `;
     }
